@@ -1,16 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>IPTV Player</title>
-        <meta name="viewport" content="width=device-width,initial-scale=1">
-        <link type="text/css" rel="stylesheet" href="https://therealddh.github.io/dokuma/iptv/player.min.css" media="all">
-        <link rel="icon" type="image/png" href="https://therealddh.github.io/dokuma/play-on.png">
-    </head>
-    <body>
-        <div id="playlist"></div>
-        <div id="player"></div>
-        <script src="https://therealddh.github.io/dokuma/js/jwplayer.js"></script>
-        <script src="https://therealddh.github.io/dokuma/iptv/player.min.js"></script>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <title>JW Player - Live MPD ClearKey Stream</title>
+    <!-- Load your cloud-hosted JW Player library -->
+    <script src="https://jwplayer.com"></script>
+</head>
+<body>
+
+    <!-- Target container element -->
+    <div id="mpd-player">Loading your MPD stream...</div>
+
+    <script>
+        jwplayer("mpd-player").setup({
+            playlist: [{
+                title: "DASH ClearKey Stream",
+                sources: [{
+                    // Paste your specific .mpd URL here
+                    file: "https://otte.cache.aiv-cdn.net/bom-nitro/live/clients/dash/enc/xperu6ixu9/out/v1/31d30c91fc65458789b84209d3fa22e4/cenc.mpd", 
+                    type: "dash", 
+                    drm: {
+                        clearkey: {
+                            // Insert your 32-character Hex keys
+                            keyId: "1f68713028d439ec03be07f56c1d6213", 
+                            key: "20093db6455160fffed4c394def3193d"
+                        }
+                    }
+                }]
+            }],
+            width: "100%",
+            aspectratio: "16:9",
+            autostart: true
+        });
+    </script>
+
+</body>
 </html>
