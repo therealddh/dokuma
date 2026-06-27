@@ -1,38 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>JW Player - Live MPD ClearKey Stream</title>
-    <!-- Load your cloud-hosted JW Player library -->
-    <script src="https://jwplayer.com"></script>
+<meta charset="UTF-8">
+<title>Advanced Shaka Player</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+
+<style>
+html,body {
+    margin:0;
+    background:black;
+    height:100%;
+    overflow:hidden;
+}
+
+video {
+    width:100%;
+    height:100%;
+}
+
+/* simple floating UI */
+#panel {
+    position:absolute;
+    top:10px;
+    left:10px;
+    background:rgba(0,0,0,0.6);
+    padding:10px;
+    color:white;
+    font-family:Arial;
+    z-index:10;
+}
+select {
+    margin:4px;
+}
+</style>
 </head>
+
 <body>
 
-    <!-- Target container element -->
-    <div id="mpd-player">Loading your MPD stream...</div>
+<div id="panel">
+    Quality:
+    <select id="quality"></select>
 
-    <script>
-        jwplayer("mpd-player").setup({
-            playlist: [{
-                title: "DASH ClearKey Stream",
-                sources: [{
-                    // Paste your specific .mpd URL here
-                    file: "https://otte.cache.aiv-cdn.net/bom-nitro/live/clients/dash/enc/xperu6ixu9/out/v1/31d30c91fc65458789b84209d3fa22e4/cenc.mpd", 
-                    type: "dash", 
-                    drm: {
-                        clearkey: {
-                            // Insert your 32-character Hex keys
-                            keyId: "1f68713028d439ec03be07f56c1d6213", 
-                            key: "20093db6455160fffed4c394def3193d"
-                        }
-                    }
-                }]
-            }],
-            width: "100%",
-            aspectratio: "16:9",
-            autostart: true
-        });
-    </script>
+    Audio:
+    <select id="audio"></select>
+
+    Speed:
+    <select id="speed">
+        <option value="0.5">0.5x</option>
+        <option value="1" selected>1x</option>
+        <option value="1.25">1.25x</option>
+        <option value="1.5">1.5x</option>
+        <option value="2">2x</option>
+    </select>
+</div>
+
+<video id="video" controls autoplay></video>
+
+<script>
+let player;
+let video;
+
+async function init() {
+    shaka.polyfill.installAll();
+
+    video = document.getElementById("video");
+    player = new shaka.Player(video);
+
+    // Stability tuning for 4K / live streams
+    player.configure({
+        streaming: {
+            bufferingGoal: 40,
+            rebufferingGoal: 5,
+            bufferBehind: 20,
+            lowLatencyMode: false
+        },
+        drm: {
+            clearKeys: {
+                "1f68713028d439ec03be07f56c1d6213": "20093db6455160fffed4c394def3193d"
+            }
+        }
+    });
+
+    player.addEventListener('error', e => console.error(e));
+
+    // Load MPD
+    await player.load("https://otte.cache.aiv-cdn.net/bom-nitro/live/clients/dash/enc/xperu6ixu9/out/v1/31d30c91fc65458789b84209d3fa22e4/cenc.mpd");
+
+    setupUI();
+}
+
+function setupUI() {
+    const tracks = player.getVariantTracks();
+
+    const qualitySelect = document.getElementById("quality");
+    const audioSelect = document.getElementById("audio");
+    const speedSelect = document.getElementById("speed");
+
+    // -------- QUALITY LIST --------
+    const videoTracks = tracks.filter(t => t.height);
+
+    videoTracks.forEach((t, i) => {
+        let opt = document.createElement("option");
+        opt.value = i;
+        opt.text = `${t.height}p ${t.bandwidth ? '('+(t.bandwidth/1000).toFixed(0)+'kbps)' : ''}`;
+        qualitySelect.appendChild(opt);
+    });
+
+    qualitySelect.addEventListener("change", () => {
+        const selected = videoTracks[qualitySelect.value];
+        player.selectVariantTrack(selected, true);
+    });
+
+    // -------- AUDIO LIST --------
+    const audioTracks = player.getAudioTracks();
+
+    audioTracks.forEach((t, i) => {
+        let opt = document.createElement("option");
+        opt.value = i;
+        opt.text = t.label || `Audio ${i+1}`;
+        audioSelect.appendChild(opt);
+    });
+
+    audioSelect.addEventListener("change", () => {
+        player.selectAudioTrack(audioTracks[audioSelect.value]);
+    });
+
+    // -------- SPEED --------
+    speedSelect.addEventListener("change", () => {
+        video.playbackRate = parseFloat(speedSelect.value);
+    });
+
+    console.log("Player ready");
+}
+
+init();
+</script>
 
 </body>
 </html>
